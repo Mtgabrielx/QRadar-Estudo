@@ -1,0 +1,144 @@
+Contexto
+
+As anotações do quadro comparam implantações do IBM Security QRadar em ambientes on-premises (appliances dedicados e/ou VMs em VMware) com o QRadar on Cloud (QROC). O foco está em capacidade (EPS/FPM), requisitos de hardware (CPU, RAM, IOPS, largura de banda, SSD), desafios de operação (backup/gestão, patching/migrações, aquisição de hardware), recuperação (HA/DR) e vantagens nativas de nuvem (elasticidade, compressão de dados, criptografia). O diagrama também cita o uso do Data Gateway como ponte segura entre a rede local e o QROC, viabilizando arquiteturas híbridas.
+
+No bloco referente às famílias de appliances “xx48” (ex.: 3148/3248), aparecem números típicos de referência do mercado para dimensionamento: ~80.000 EPS e ~3,6 milhões de FPM. Esses valores servem como guias para planejamento de capacidade, correlacionando ingestão de eventos (EPS) e fluxos (FPM) com CPU, memória e I/O de armazenamento.
+
+Desafios
+Subutilização de hardware (CPU/Memory/Disk/Network)
+
+Em on-premises, é comum superdimensionar para absorver picos de tráfego e margens de crescimento. Resultado: longos períodos de ociosidade de CPU, RAM, disco e rede. Em contrapartida, QROC mitiga a ociosidade com elasticidade — os recursos sobem e descem conforme a demanda real.
+
+Exemplo prático: a organização dimensiona para 30.000 EPS no horário comercial, mas cai para 5.000 EPS à noite/finais de semana. No on-prem, os recursos continuam alocados; no QROC, a plataforma otimiza essa alocação, reduzindo custo operacional indireto.
+
+Boas práticas em on-prem: consolidar coletores, ativar compressão quando possível, preferir SSDs com IOPS consistentes, otimizar parsers (DSMs) e coalescência de eventos para evitar “trabalho inútil” de CPU.
+
+Escalabilidade
+
+On-prem: expansão exige cotação, compra, entrega, montagem, energia, refrigeração, janelas de instalação e testes.
+QROC: aumenta-se a capacidade lógica (EPS/FPM/retention) com muito menos atrito logístico. Em cenários híbridos, o Data Gateway absorve novas fontes e picos sem redesenhar toda a malha on-prem.
+
+Exemplo: uma campanha de marketing global duplica telemetria por 2 semanas. Em QROC, o aumento temporário é mais simples; em on-prem, muitas vezes não há folga para dobrar EPS/FPM sem adquirir novo hardware.
+
+Backups e gestão
+
+On-prem: rotinas de backup de Console/EP/FP, retenção, testes de restore, patches de sistema/QRadar, atualização de DSMs, tuning de regras e manutenção de banco de dados.
+QROC: parte significativa desse ciclo é padronizada e conduzida como serviço, com janelas de manutenção planejadas e redução de risco operacional para o cliente.
+
+Exemplo: aplicação de Fix Pack. Em on-prem, o time coordena snapshots e rollback; em QROC, o ciclo é gerido pelo provedor com comunicação de janelas e impacto.
+
+Procurement e recovery
+
+On-prem: ciclos de aquisição, compatibilidade, prazos, peças de reposição e contratos de suporte.
+QROC: HA/DR fazem parte do serviço, com redundância entre zonas/regiões, políticas de backup/retention e processos de recuperação padronizados.
+
+Exemplo: falha de hardware crítica. Em on-prem, o RTO/RPO dependem de estoque e playbooks; em QROC, o provedor aciona mecanismos de DR/HA.
+
+Conceitos
+EPS (Events Per Second)
+
+Mede a taxa de ingestão de eventos. Dimensionar pelo pico sustentado evita backlog e degradação. Regras de correlação, agregação/coalescência e filtros impactam o throughput.
+
+Exemplo: habilitar um novo EDR aumenta 8.000 EPS sustentados; é preciso revisar licença, parsers, regras que dependem de dados de endpoint e, possivelmente, retenção.
+
+FPM (Flows Per Minute)
+
+Mede a ingestão de fluxos (NetFlow/IPFIX). Em ambientes de grande tráfego leste-oeste, FPM chega a milhões por minuto. Nas linhas “xx48” há referências de ~3,6 milhões de FPM associadas a ~80.000 EPS — úteis para planejamento.
+
+Impacto técnico: processamento de fluxos pressiona CPU e, sobretudo, IOPS. SSDs de baixa latência sustentam a expansão de índices e consultas rápidas.
+
+Data Gateway
+
+Componente posicionado próximo às fontes on-prem que comprime e criptografa a telemetria e a encaminha ao QROC de forma segura. Reduz exposição da rede interna, simplifica regras de firewall e viabiliza arquitetura híbrida.
+
+Exemplo: filiais enviam logs → Data Gateway no datacenter → túnel seguro até QROC (com buffer local para resiliência).
+
+HA/DR, compressão e criptografia
+
+HA/DR: continuidade e recuperação diante de falhas.
+
+Compressão: otimiza custo de armazenamento e trânsito.
+
+Criptografia: protege dados em repouso e em trânsito.
+No QROC, são capacidades nativas; no on-prem, exigem integrações e testes regulares.
+
+Arquitetura
+On-premises (Appliances/VMware)
+
+As notas citam Console, EP (Event Processor) e FP (Flow Processor), além de requisitos típicos de appliances “xx48”:
+
+~128 GB RAM
+
+~10.000 IOPS
+
+~2.000 MB/s de largura de banda de disco
+
+SSDs e múltiplos núcleos/threads
+
+Interconexão de 10 GbE (comum nesses perfis)
+
+Em VMware, garanta reservas de CPU/RAM (evitar “CPU steal”), storage de baixa latência e MTU de rede adequado. Topologias usuais: Console + EP + FP dedicados; coletores remotos por site; limites de EPS/FPM por nó; crescimento adicionando nós ou trocando por modelos mais potentes.
+
+QROC (QRadar on Cloud)
+
+QRadar como serviço, com escalabilidade, HA/DR, patching gerenciado e retenção ajustável. O acesso é via console web seguro; a integração com on-prem ocorre pelo Data Gateway.
+
+Benefícios práticos:
+
+Redução de time-to-value;
+
+Menos esforço em upgrades/fix packs;
+
+Elasticidade para picos (incidentes, auditorias);
+
+Políticas padronizadas de backup e criptografia.
+
+Trade-offs: dependência de conectividade e requisitos de compliance/soberania de dados que podem limitar a ida total para nuvem.
+
+Modelos de uso
+
+100% On-prem: controle total, maior ônus de operação (patching, backup, expansão).
+
+100% QROC: operação simplificada, HA/DR embutidos, elasticidade sob demanda; avaliar latência e requisitos regulatórios.
+
+Híbrido com Data Gateway: coleta local e envio seguro ao QROC; reduz exposição da rede interna, mantém resiliência e acelera expansão.
+
+Benefícios
+
+Menos ociosidade via elasticidade (QROC).
+
+Patching/migrações padronizados e gerenciados.
+
+HA/DR, compressão e criptografia nativos.
+
+Adoção híbrida simplificada (Data Gateway).
+
+Planejamento por métricas claras (EPS/FPM) e expansão previsível.
+
+Recursos avançados e boas práticas
+
+Tuning de ingestão: corrigir parsers/DSMs, coalescência, filtros e regras para reduzir ruído e priorizar sinal.
+
+Armazenamento: preferir SSDs com IOPS estável; monitorar crescimento de índices e latência de consultas.
+
+Observabilidade: acompanhar filas/atrasos, CPU steal em virtualização, latência de rede, gargalos de I/O.
+
+Segurança: criptografia ponta-a-ponta (gateway→QROC), segregação de funções/roles, MFA e trilhas de auditoria.
+
+Procedimentos: playbooks de backup/restore, DR testado, e janelas de manutenção comunicadas ao SOC.
+
+Exemplo guiado (ampliação de EDR):
+
+Estimar aumento de EPS (+8.000 sustentados).
+
+Verificar licença e headroom de EP/FP.
+
+Validar parsers e regras que dependem de eventos de endpoint.
+
+Avaliar retenção e custo de armazenamento.
+
+Em QROC: solicitar ajuste de capacidade e validar janelas de manutenção com o seu SLA.
+
+Conclusão
+
+As notas do quadro sintetizam os trade-offs entre operar o QRadar on-premises e consumir QROC. Onde há grande variação de carga, exigência forte de HA/DR e pressão para reduzir carga operacional, QROC + Data Gateway costuma acelerar valor e diminuir risco de patching/migrações. Organizações com restrições rígidas de soberania de dados ou dependências de conectividade podem preferir on-prem — desde que planejem capacidade com folga (EPS/FPM), usem storage de baixa latência e mantenham playbooks de backup/recovery testados.
